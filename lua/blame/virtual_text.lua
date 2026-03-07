@@ -20,7 +20,7 @@ function M.enable(bufnr, blame_data, hl_group)
     if line >= 0 and line < vim.api.nvim_buf_line_count(bufnr) then
       vim.api.nvim_buf_set_extmark(bufnr, ns, line, 0, {
         virt_text = { { format_entry(entry), hl_group } },
-        virt_text_pos = "eol",
+        virt_text_pos = "right_align",
       })
     end
   end
