@@ -95,6 +95,13 @@ function M.setup(opts)
   vim.api.nvim_create_user_command("BlameToggleWindow", function()
     M.toggle_window()
   end, { desc = "Toggle git blame side window" })
+
+  vim.api.nvim_create_autocmd("BufDelete", {
+    group = vim.api.nvim_create_augroup("blame_cleanup", { clear = true }),
+    callback = function(args)
+      state[args.buf] = nil
+    end,
+  })
 end
 
 return M
