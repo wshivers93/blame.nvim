@@ -1,7 +1,3 @@
-local git = require("blame.git")
-local virtual_text = require("blame.virtual_text")
-local window = require("blame.window")
-
 local M = {}
 
 M.config = {
@@ -36,7 +32,7 @@ function M.toggle_virtual_text()
   local s = get_state(bufnr)
 
   if s.virtual_text then
-    virtual_text.disable(bufnr)
+    require("blame.virtual_text").disable(bufnr)
     s.virtual_text = false
     return
   end
@@ -47,12 +43,12 @@ function M.toggle_virtual_text()
     return
   end
 
-  git.blame(file, M.config.date_format, function(err, data)
+  require("blame.git").blame(file, M.config.date_format, function(err, data)
     if err then
       vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
       return
     end
-    virtual_text.enable(bufnr, data, M.config.virtual_text_hl, M.config.format)
+    require("blame.virtual_text").enable(bufnr, data, M.config.virtual_text_hl, M.config.format)
     s.virtual_text = true
   end)
 end
@@ -63,7 +59,7 @@ function M.toggle_window()
   local s = get_state(bufnr)
 
   if s.window then
-    window.disable(s.window, s.source_win)
+    require("blame.window").disable(s.window, s.source_win)
     s.window = nil
     s.source_win = nil
     return
@@ -75,13 +71,13 @@ function M.toggle_window()
     return
   end
 
-  git.blame(file, M.config.date_format, function(err, data)
+  require("blame.git").blame(file, M.config.date_format, function(err, data)
     if err then
       vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
       return
     end
     local source_win = vim.api.nvim_get_current_win()
-    local info = window.enable(bufnr, data, M.config.format)
+    local info = require("blame.window").enable(bufnr, data, M.config.format)
     s.window = info
     s.source_win = source_win
   end)
