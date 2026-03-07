@@ -6,6 +6,9 @@ describe("window", function()
     { hash = "abc1234", author = "Jane", date = "2024-01-01", summary = "init", lnum = 1 },
     { hash = "def5678", author = "John", date = "2024-01-02", summary = "fix", lnum = 2 },
   }
+  local format = function(entry)
+    return string.format("%s %s %s %s", entry.hash, entry.author, entry.date, entry.summary)
+  end
 
   before_each(function()
     -- Close all windows except the current one
@@ -26,7 +29,7 @@ describe("window", function()
   end)
 
   it("creates a new window and buffer", function()
-    local info = window.enable(source_bufnr, blame_data)
+    local info = window.enable(source_bufnr, blame_data, format)
 
     assert.is_truthy(vim.api.nvim_win_is_valid(info.win))
     assert.is_truthy(vim.api.nvim_buf_is_valid(info.buf))
@@ -36,7 +39,7 @@ describe("window", function()
   end)
 
   it("blame window has correct properties", function()
-    local info = window.enable(source_bufnr, blame_data)
+    local info = window.enable(source_bufnr, blame_data, format)
 
     assert.are.equal("nofile", vim.bo[info.buf].buftype)
     assert.is_false(vim.bo[info.buf].modifiable)
@@ -49,7 +52,7 @@ describe("window", function()
 
   it("disable closes window and removes scrollbind from source", function()
     local source_win = vim.api.nvim_get_current_win()
-    local info = window.enable(source_bufnr, blame_data)
+    local info = window.enable(source_bufnr, blame_data, format)
 
     window.disable(info, source_win)
 

@@ -1,17 +1,11 @@
 local M = {}
 
---- Format a blame entry for the window display.
---- @param entry table { hash, author, date, summary }
---- @return string
-local function format_entry(entry)
-  return string.format("%s %s %s %s", entry.hash, entry.author, entry.date, entry.summary)
-end
-
 --- Open a blame side window for the given buffer.
 --- @param source_bufnr number
 --- @param blame_data table[]
+--- @param format fun(entry: table): string
 --- @return { win: number, buf: number }
-function M.enable(source_bufnr, blame_data)
+function M.enable(source_bufnr, blame_data, format)
   local line_count = vim.api.nvim_buf_line_count(source_bufnr)
   local lines = {}
   local blame_by_line = {}
@@ -23,7 +17,7 @@ function M.enable(source_bufnr, blame_data)
   for i = 1, line_count do
     local entry = blame_by_line[i]
     if entry then
-      table.insert(lines, format_entry(entry))
+      table.insert(lines, format(entry))
     else
       table.insert(lines, "")
     end

@@ -7,6 +7,9 @@ describe("virtual_text", function()
     { hash = "abc1234", author = "Jane", date = "2024-01-01", summary = "init", lnum = 1 },
     { hash = "def5678", author = "John", date = "2024-01-02", summary = "fix", lnum = 2 },
   }
+  local format = function(entry)
+    return string.format("%s %s %s %s", entry.hash, entry.author, entry.date, entry.summary)
+  end
 
   before_each(function()
     bufnr = vim.api.nvim_create_buf(false, true)
@@ -20,14 +23,14 @@ describe("virtual_text", function()
   end)
 
   it("creates extmarks when enabled", function()
-    virtual_text.enable(bufnr, blame_data, "Comment")
+    virtual_text.enable(bufnr, blame_data, "Comment", format)
 
     local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, {})
     assert.are.equal(2, #marks)
   end)
 
   it("clears extmarks when disabled", function()
-    virtual_text.enable(bufnr, blame_data, "Comment")
+    virtual_text.enable(bufnr, blame_data, "Comment", format)
     virtual_text.disable(bufnr)
 
     local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, {})
@@ -36,7 +39,7 @@ describe("virtual_text", function()
 
   it("round-trip enable/disable leaves buffer clean", function()
     local marks_before = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, {})
-    virtual_text.enable(bufnr, blame_data, "Comment")
+    virtual_text.enable(bufnr, blame_data, "Comment", format)
     virtual_text.disable(bufnr)
     local marks_after = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, {})
 
