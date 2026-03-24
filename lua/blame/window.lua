@@ -1,11 +1,17 @@
 local M = {}
 
+local ns = vim.api.nvim_create_namespace("blame_window")
+
 --- Open a blame side window for the given buffer.
 --- @param source_bufnr number
 --- @param blame_data table[]
---- @param format fun(entry: table): string
+--- @param config table
 --- @return { win: number, buf: number }
-function M.enable(source_bufnr, blame_data, format)
+function M.enable(source_bufnr, blame_data, config)
+	local format = config.format
+	local highlight_groups = config.highlight_groups or { "BlameNvimCommit1", "BlameNvimCommit2" }
+	local width_cfg = config.window_width or { min = 25, max = 40 }
+
 	local line_count = vim.api.nvim_buf_line_count(source_bufnr)
 	local lines = {}
 	local blame_by_line = {}
@@ -30,7 +36,7 @@ function M.enable(source_bufnr, blame_data, format)
 			max_width = #line
 		end
 	end
-	max_width = math.min(math.max(max_width, 30), 60)
+	max_width = math.min(math.max(max_width, width_cfg.min), width_cfg.max)
 
 	local source_win = vim.api.nvim_get_current_win()
 
@@ -40,6 +46,22 @@ function M.enable(source_bufnr, blame_data, format)
 	vim.bo[blame_buf].buftype = "nofile"
 	vim.bo[blame_buf].modifiable = false
 	vim.bo[blame_buf].filetype = "blame"
+
+	-- Apply per-commit highlight groups
+	local commit_color = {}
+	local color_count = 0
+	for i = 1, line_count do
+		local entry = blame_by_line[i]
+		if entry then
+			local hash = entry.hash
+			if not commit_color[hash] then
+				color_count = color_count + 1
+				commit_color[hash] = ((color_count - 1) % #highlight_groups) + 1
+			end
+			local hl = highlight_groups[commit_color[hash]]
+			vim.api.nvim_buf_add_highlight(blame_buf, ns, hl, i - 1, 0, -1)
+		end
+	end
 
 	-- Open split to the left
 	vim.cmd("topleft vsplit")

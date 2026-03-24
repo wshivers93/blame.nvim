@@ -3,6 +3,9 @@ local M = {}
 M.config = {
 	date_format = "%Y-%m-%d",
 	virtual_text_hl = "Comment",
+	highlight_groups = { "BlameNvimCommit1", "BlameNvimCommit2" },
+	merge_consecutive = true,
+	window_width = { min = 25, max = 40 },
 	format = function(entry)
 		return string.format("%s %s %s %s", entry.hash, entry.author, entry.date, entry.summary)
 	end,
@@ -48,7 +51,7 @@ function M.toggle_virtual_text()
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
 		end
-		require("blame.virtual_text").enable(bufnr, data, M.config.virtual_text_hl, M.config.format)
+		require("blame.virtual_text").enable(bufnr, data, M.config)
 		s.virtual_text = true
 	end)
 end
@@ -77,7 +80,7 @@ function M.toggle_window()
 			return
 		end
 		local source_win = vim.api.nvim_get_current_win()
-		local info = require("blame.window").enable(bufnr, data, M.config.format)
+		local info = require("blame.window").enable(bufnr, data, M.config)
 		s.window = info
 		s.source_win = source_win
 	end)
