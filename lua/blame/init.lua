@@ -6,6 +6,7 @@ M.config = {
 	highlight_groups = { "BlameNvimCommit1", "BlameNvimCommit2" },
 	merge_consecutive = true,
 	window_width = { min = 25, max = 40 },
+	max_length = nil,
 	format = function(entry)
 		return string.format("%s %s %s %s", entry.hash, entry.author, entry.date, entry.summary)
 	end,

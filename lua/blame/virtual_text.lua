@@ -12,6 +12,7 @@ function M.enable(bufnr, blame_data, config)
 	local highlight_groups = config.highlight_groups or { "BlameNvimCommit1", "BlameNvimCommit2" }
 	local merge_consecutive = config.merge_consecutive ~= false
 	local format = config.format
+	local max_length = config.max_length
 
 	-- Build a sorted list of entries by line number
 	local sorted = {}
@@ -44,9 +45,13 @@ function M.enable(bufnr, blame_data, config)
 					virt_text_pos = "right_align",
 				})
 			else
+				local text = format(entry)
+				if max_length and #text > max_length then
+					text = text:sub(1, max_length) .. "…"
+				end
 				local hl = highlight_groups[commit_color[hash]]
 				vim.api.nvim_buf_set_extmark(bufnr, ns, line, 0, {
-					virt_text = { { " " .. format(entry), hl } },
+					virt_text = { { " " .. text, hl } },
 					virt_text_pos = "right_align",
 				})
 			end
