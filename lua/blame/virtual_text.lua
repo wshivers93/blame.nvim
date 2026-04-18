@@ -35,7 +35,7 @@ function M.enable(bufnr, blame_data, config)
 
 			if is_continuation then
 				vim.api.nvim_buf_set_extmark(bufnr, ns, line, 0, {
-					virt_text = { { " │", "BlameNvimCommitDim" } },
+					virt_text = { { " │", commit_color[hash] } },
 					virt_text_pos = "right_align",
 				})
 			else
