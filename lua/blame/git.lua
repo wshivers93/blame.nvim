@@ -73,6 +73,21 @@ function M.blame_line(file, line, date_format, callback)
 	end)
 end
 
+--- Run git show asynchronously for a commit hash.
+--- @param hash string Commit hash
+--- @param callback fun(err: string|nil, output: string|nil)
+function M.show(hash, callback)
+	vim.system({ "git", "show", hash }, { text = true }, function(result)
+		vim.schedule(function()
+			if result.code ~= 0 then
+				callback(result.stderr or "git show failed", nil)
+				return
+			end
+			callback(nil, result.stdout)
+		end)
+	end)
+end
+
 --- Run git blame asynchronously on a file.
 --- @param file string Absolute path to the file
 --- @param date_format string strftime format for dates

@@ -105,6 +105,47 @@ function M.toggle_window()
 	end)
 end
 
+local function open_diff_window(hash)
+	require("blame.git").show(hash, function(err, output)
+		if err then
+			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
+			return
+		end
+
+		local lines = vim.split(output or "", "\n", { plain = true })
+		local buf = vim.api.nvim_create_buf(false, true)
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+		vim.bo[buf].buftype = "nofile"
+		vim.bo[buf].modifiable = false
+		vim.bo[buf].filetype = "diff"
+
+		local width = math.floor(vim.o.columns * 0.8)
+		local height = math.floor(vim.o.lines * 0.8)
+		local row = math.floor((vim.o.lines - height) / 2)
+		local col = math.floor((vim.o.columns - width) / 2)
+
+		local win = vim.api.nvim_open_win(buf, true, {
+			relative = "editor",
+			row = row,
+			col = col,
+			width = width,
+			height = height,
+			style = "minimal",
+			border = "rounded",
+			footer = " q close ",
+			footer_pos = "right",
+		})
+
+		local function close()
+			if vim.api.nvim_win_is_valid(win) then
+				vim.api.nvim_win_close(win, true)
+			end
+		end
+		vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
+		vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
+	end)
+end
+
 --- Show commit details for the line under the cursor in a floating window.
 function M.show_commit_details()
 	local bufnr = vim.api.nvim_get_current_buf()
@@ -146,6 +187,9 @@ function M.show_commit_details()
 			width = math.max(width, #l)
 		end
 
+		local footer = " d diff · q close "
+		width = math.max(width, #footer)
+
 		local win = vim.api.nvim_open_win(buf, true, {
 			relative = "cursor",
 			row = 1,
@@ -154,6 +198,8 @@ function M.show_commit_details()
 			height = #content,
 			style = "minimal",
 			border = "rounded",
+			footer = footer,
+			footer_pos = "right",
 		})
 
 		local function close()
@@ -163,6 +209,10 @@ function M.show_commit_details()
 		end
 		vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
 		vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
+		vim.keymap.set("n", "d", function()
+			close()
+			open_diff_window(entry.hash)
+		end, { buffer = buf, nowait = true })
 	end)
 end
 
