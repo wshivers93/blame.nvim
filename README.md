@@ -17,10 +17,11 @@ Requires Neovim 0.10+.
 
 ## Commands
 
-| Command              | Description                              |
-| -------------------- | ---------------------------------------- |
+| Command              | Description                                       |
+| -------------------- | ------------------------------------------------- |
 | `:BlameToggle`       | Toggle inline blame as right-aligned virtual text |
-| `:BlameToggleWindow` | Toggle a scroll-synced blame side window |
+| `:BlameToggleWindow` | Toggle a scroll-synced blame side window          |
+| `:BlameShowCommit`   | Show commit details for the current line          |
 
 ## Configuration
 
@@ -77,6 +78,7 @@ The plugin does not set any keymaps. Add them via the `keys` field in your lazy.
   keys = {
     { "<leader>gb", "<cmd>BlameToggle<cr>", desc = "Toggle git blame" },
     { "<leader>gB", "<cmd>BlameToggleWindow<cr>", desc = "Toggle git blame window" },
+    { "<leader>gc", "<cmd>BlameShowCommit<cr>", desc = "Show commit details" },
   },
 }
 ```

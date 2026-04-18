@@ -84,6 +84,38 @@ describe("git.parse_porcelain", function()
 		assert.are.equal("Second commit", results[2].summary)
 	end)
 
+	it("propagates metadata to subsequent occurrences of the same commit", function()
+		-- Simulates real porcelain output where a commit appears non-consecutively.
+		-- Metadata is only present on the first occurrence; subsequent ones
+		-- only have the header, filename, and content line.
+		local output = table.concat({
+			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1111 1 1 1",
+			"author Alice",
+			"author-time 1700000000",
+			"summary First commit",
+			"filename test.lua",
+			"\tline 1",
+			"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2222 2 2 1",
+			"author Bob",
+			"author-time 1700100000",
+			"summary Second commit",
+			"filename test.lua",
+			"\tline 2",
+			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1111 3 3",
+			"filename test.lua",
+			"\tline 3",
+		}, "\n")
+
+		local results = git.parse_porcelain(output, date_format)
+
+		assert.are.equal(3, #results)
+		-- Third line reuses commit aaa... — should have Alice's metadata
+		assert.are.equal("aaaaaaa", results[3].hash)
+		assert.are.equal("Alice", results[3].author)
+		assert.are.equal("First commit", results[3].summary)
+		assert.is_truthy(results[3].date:match("^%d%d%d%d%-%d%d%-%d%d$"))
+	end)
+
 	it("returns empty table for empty output", function()
 		local results = git.parse_porcelain("", date_format)
 		assert.are.same({}, results)

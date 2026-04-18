@@ -23,4 +23,8 @@ describe("setup", function()
 	it("creates BlameToggleWindow command", function()
 		assert.is_truthy(vim.fn.exists(":BlameToggleWindow") == 2)
 	end)
+
+	it("creates BlameShowCommit command", function()
+		assert.is_truthy(vim.fn.exists(":BlameShowCommit") == 2)
+	end)
 end)

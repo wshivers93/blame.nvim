@@ -87,6 +87,64 @@ function M.toggle_window()
 	end)
 end
 
+--- Show commit details for the line under the cursor in a floating window.
+function M.show_commit_details()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local file = get_file(bufnr)
+	if not file then
+		vim.notify("blame.nvim: buffer has no file", vim.log.levels.WARN)
+		return
+	end
+
+	local line = vim.api.nvim_win_get_cursor(0)[1]
+
+	require("blame.git").blame_line(file, line, M.config.date_format, function(err, entry)
+		if err then
+			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if not entry then
+			vim.notify("blame.nvim: no blame data for this line", vim.log.levels.WARN)
+			return
+		end
+
+		local content = {
+			"Commit:  " .. entry.hash,
+			"Author:  " .. entry.author,
+			"Date:    " .. entry.date,
+			"Summary: " .. entry.summary,
+		}
+
+		local buf = vim.api.nvim_create_buf(false, true)
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+		vim.bo[buf].buftype = "nofile"
+		vim.bo[buf].modifiable = false
+
+		local width = 0
+		for _, l in ipairs(content) do
+			width = math.max(width, #l)
+		end
+
+		local win = vim.api.nvim_open_win(buf, true, {
+			relative = "cursor",
+			row = 1,
+			col = 0,
+			width = width + 2,
+			height = #content,
+			style = "minimal",
+			border = "rounded",
+		})
+
+		local function close()
+			if vim.api.nvim_win_is_valid(win) then
+				vim.api.nvim_win_close(win, true)
+			end
+		end
+		vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
+		vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
+	end)
+end
+
 --- Setup the plugin with user options.
 --- @param opts table|nil
 function M.setup(opts)
@@ -99,6 +157,10 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("BlameToggleWindow", function()
 		M.toggle_window()
 	end, { desc = "Toggle git blame side window" })
+
+	vim.api.nvim_create_user_command("BlameShowCommit", function()
+		M.show_commit_details()
+	end, { desc = "Show commit details for the current line" })
 
 	vim.api.nvim_create_autocmd("BufDelete", {
 		group = vim.api.nvim_create_augroup("blame_cleanup", { clear = true }),
