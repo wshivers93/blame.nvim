@@ -52,6 +52,9 @@ function M.toggle_virtual_text()
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
 		end
+		if not vim.api.nvim_buf_is_valid(bufnr) then
+			return
+		end
 		require("blame.virtual_text").enable(bufnr, data, M.config)
 		s.virtual_text = true
 	end)
@@ -81,6 +84,9 @@ function M.toggle_window()
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
 		end
+		if not vim.api.nvim_buf_is_valid(bufnr) then
+			return
+		end
 		local info = require("blame.window").enable(bufnr, data, M.config)
 		s.window = info
 		s.source_win = source_win
@@ -101,6 +107,9 @@ function M.show_commit_details()
 	require("blame.git").blame_line(file, line, M.config.date_format, function(err, entry)
 		if err then
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		if not vim.api.nvim_buf_is_valid(bufnr) then
 			return
 		end
 		if not entry then
