@@ -48,18 +48,11 @@ function M.enable(source_bufnr, blame_data, config)
 	vim.bo[blame_buf].filetype = "blame"
 
 	-- Apply per-commit highlight groups
-	local commit_color = {}
-	local color_count = 0
+	local commit_color = require("blame.highlights").assign_commit_colors(blame_by_line, line_count, highlight_groups)
 	for i = 1, line_count do
 		local entry = blame_by_line[i]
 		if entry then
-			local hash = entry.hash
-			if not commit_color[hash] then
-				color_count = color_count + 1
-				commit_color[hash] = ((color_count - 1) % #highlight_groups) + 1
-			end
-			local hl = highlight_groups[commit_color[hash]]
-			vim.api.nvim_buf_add_highlight(blame_buf, ns, hl, i - 1, 0, -1)
+			vim.api.nvim_buf_add_highlight(blame_buf, ns, commit_color[entry.hash], i - 1, 0, -1)
 		end
 	end
 

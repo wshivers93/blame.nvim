@@ -20,22 +20,16 @@ function M.enable(bufnr, blame_data, config)
 		sorted[entry.lnum] = entry
 	end
 
-	-- Assign a color index to each unique commit, in order of first appearance
-	local commit_color = {}
-	local color_count = 0
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+	local commit_color = require("blame.highlights").assign_commit_colors(sorted, line_count, highlight_groups)
 	local prev_hash = nil
 
-	for lnum = 1, vim.api.nvim_buf_line_count(bufnr) do
+	for lnum = 1, line_count do
 		local entry = sorted[lnum]
 		if not entry then
 			prev_hash = nil
 		else
 			local hash = entry.hash
-			if not commit_color[hash] then
-				color_count = color_count + 1
-				commit_color[hash] = ((color_count - 1) % #highlight_groups) + 1
-			end
-
 			local line = lnum - 1 -- 0-indexed
 			local is_continuation = merge_consecutive and hash == prev_hash
 
@@ -49,9 +43,8 @@ function M.enable(bufnr, blame_data, config)
 				if max_length and #text > max_length then
 					text = text:sub(1, max_length) .. "…"
 				end
-				local hl = highlight_groups[commit_color[hash]]
 				vim.api.nvim_buf_set_extmark(bufnr, ns, line, 0, {
-					virt_text = { { " " .. text, hl } },
+					virt_text = { { " " .. text, commit_color[hash] } },
 					virt_text_pos = "right_align",
 				})
 			end
