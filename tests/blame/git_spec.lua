@@ -121,3 +121,178 @@ describe("git.parse_porcelain", function()
 		assert.are.same({}, results)
 	end)
 end)
+
+local function stub_system(impl)
+	local original = vim.system
+	vim.system = impl
+	return function()
+		vim.system = original
+	end
+end
+
+local function await(done)
+	vim.wait(200, function()
+		return done.flag
+	end)
+end
+
+local single_entry_porcelain = table.concat({
+	"abc1234567890abcdef1234567890abcdef12345678 1 1 1",
+	"author Jane Doe",
+	"author-time 1700000000",
+	"summary Initial commit",
+	"filename test.lua",
+	"\tlocal x = 1",
+}, "\n")
+
+describe("git.show", function()
+	local restore
+
+	after_each(function()
+		if restore then
+			restore()
+			restore = nil
+		end
+	end)
+
+	it("invokes callback with stdout on success", function()
+		local captured_cmd
+		restore = stub_system(function(cmd, _opts, cb)
+			captured_cmd = cmd
+			cb({ code = 0, stdout = "diff --git a/x b/x\n", stderr = "" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_output
+		git.show("abc1234", function(err, output)
+			result_err = err
+			result_output = output
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.same({ "git", "show", "abc1234" }, captured_cmd)
+		assert.is_nil(result_err)
+		assert.are.equal("diff --git a/x b/x\n", result_output)
+	end)
+
+	it("invokes callback with stderr on failure", function()
+		restore = stub_system(function(_cmd, _opts, cb)
+			cb({ code = 128, stdout = "", stderr = "fatal: bad object" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_output
+		git.show("badhash", function(err, output)
+			result_err = err
+			result_output = output
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.equal("fatal: bad object", result_err)
+		assert.is_nil(result_output)
+	end)
+end)
+
+describe("git.blame", function()
+	local restore
+
+	after_each(function()
+		if restore then
+			restore()
+			restore = nil
+		end
+	end)
+
+	it("invokes callback with parsed entries on success", function()
+		local captured_cmd
+		restore = stub_system(function(cmd, _opts, cb)
+			captured_cmd = cmd
+			cb({ code = 0, stdout = single_entry_porcelain, stderr = "" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_data
+		git.blame("/path/to/test.lua", "%Y-%m-%d", function(err, data)
+			result_err = err
+			result_data = data
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.same({ "git", "blame", "--porcelain", "--", "/path/to/test.lua" }, captured_cmd)
+		assert.is_nil(result_err)
+		assert.are.equal(1, #result_data)
+		assert.are.equal("abc1234", result_data[1].hash)
+	end)
+
+	it("invokes callback with stderr on failure", function()
+		restore = stub_system(function(_cmd, _opts, cb)
+			cb({ code = 128, stdout = "", stderr = "fatal: not a git repository" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_data
+		git.blame("/path/to/test.lua", "%Y-%m-%d", function(err, data)
+			result_err = err
+			result_data = data
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.equal("fatal: not a git repository", result_err)
+		assert.is_nil(result_data)
+	end)
+end)
+
+describe("git.blame_line", function()
+	local restore
+
+	after_each(function()
+		if restore then
+			restore()
+			restore = nil
+		end
+	end)
+
+	it("invokes callback with the entry for the requested line", function()
+		local captured_cmd
+		restore = stub_system(function(cmd, _opts, cb)
+			captured_cmd = cmd
+			cb({ code = 0, stdout = single_entry_porcelain, stderr = "" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_entry
+		git.blame_line("/path/to/test.lua", 1, "%Y-%m-%d", function(err, entry)
+			result_err = err
+			result_entry = entry
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.same({ "git", "blame", "--porcelain", "-L1,1", "--", "/path/to/test.lua" }, captured_cmd)
+		assert.is_nil(result_err)
+		assert.are.equal("abc1234", result_entry.hash)
+		assert.are.equal("Jane Doe", result_entry.author)
+	end)
+
+	it("invokes callback with stderr on failure", function()
+		restore = stub_system(function(_cmd, _opts, cb)
+			cb({ code = 128, stdout = "", stderr = "fatal: no such path" })
+		end)
+
+		local done = { flag = false }
+		local result_err, result_entry
+		git.blame_line("/missing.lua", 1, "%Y-%m-%d", function(err, entry)
+			result_err = err
+			result_entry = entry
+			done.flag = true
+		end)
+		await(done)
+
+		assert.are.equal("fatal: no such path", result_err)
+		assert.is_nil(result_entry)
+	end)
+end)
