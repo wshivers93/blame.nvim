@@ -12,12 +12,12 @@ M.config = {
 	end,
 }
 
--- Per-buffer state: { [bufnr] = { virtual_text = bool, window = { win, buf } | nil, source_win = number | nil } }
+-- Per-buffer state: { [bufnr] = { virtual_text = bool, window = { win, buf } | nil, source_win = number | nil, loading = bool } }
 local state = {}
 
 local function get_state(bufnr)
 	if not state[bufnr] then
-		state[bufnr] = { virtual_text = false, window = nil, source_win = nil }
+		state[bufnr] = { virtual_text = false, window = nil, source_win = nil, loading = false }
 	end
 	return state[bufnr]
 end
@@ -41,13 +41,19 @@ function M.toggle_virtual_text()
 		return
 	end
 
+	if s.loading then
+		return
+	end
+
 	local file = get_file(bufnr)
 	if not file then
 		vim.notify("blame.nvim: buffer has no file", vim.log.levels.WARN)
 		return
 	end
 
+	s.loading = true
 	require("blame.git").blame(file, M.config.date_format, function(err, data)
+		s.loading = false
 		if err then
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
@@ -72,14 +78,20 @@ function M.toggle_window()
 		return
 	end
 
+	if s.loading then
+		return
+	end
+
 	local file = get_file(bufnr)
 	if not file then
 		vim.notify("blame.nvim: buffer has no file", vim.log.levels.WARN)
 		return
 	end
 
+	s.loading = true
 	local source_win = vim.api.nvim_get_current_win()
 	require("blame.git").blame(file, M.config.date_format, function(err, data)
+		s.loading = false
 		if err then
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
