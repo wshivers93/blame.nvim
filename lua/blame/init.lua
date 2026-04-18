@@ -75,12 +75,12 @@ function M.toggle_window()
 		return
 	end
 
+	local source_win = vim.api.nvim_get_current_win()
 	require("blame.git").blame(file, M.config.date_format, function(err, data)
 		if err then
 			vim.notify("blame.nvim: " .. err, vim.log.levels.ERROR)
 			return
 		end
-		local source_win = vim.api.nvim_get_current_win()
 		local info = require("blame.window").enable(bufnr, data, M.config)
 		s.window = info
 		s.source_win = source_win
